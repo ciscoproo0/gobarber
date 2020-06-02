@@ -1,6 +1,7 @@
 import * as Yup from 'yup';
 import { startOfHour, parseISO, isBefore, format, subHours } from 'date-fns';
 import pt from 'date-fns/locale/pt';
+import sequelize from 'sequelize';
 
 import Appointment from '../models/appointment';
 import User from '../models/User';
@@ -12,11 +13,16 @@ import CancellationMail from '../jobs/CancellationMail';
 class AppointmentController {
   async index(req, res) {
     const { page = 1 } = req.query;
+    const { Op } = sequelize;
 
     const appointments = await Appointment.findAll({
       where: {
         user_id: req.userId,
         canceled_at: null,
+        updated_at: {
+          // returns only appointments for the day
+          [Op.gt]: new Date(new Date() - 24 * 60 * 60 * 1000),
+        },
       },
       order: ['date'],
       attributes: ['id', 'date', 'past', 'cancelable'],
